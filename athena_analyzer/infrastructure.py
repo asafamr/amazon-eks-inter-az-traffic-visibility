@@ -38,12 +38,12 @@ class AthenaAnalyzer(Construct):
         pod_metadata_extractor_bucket: s3.Bucket,
         flow_logs_bucket: s3.Bucket,
         frequency: Duration,
-        server_access_logs_bucket: s3.Bucket,
+        # server_access_logs_bucket: s3.Bucket,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        self.results_bucket = self.__create_results_bucket(server_access_logs_bucket)
+        # self.results_bucket = self.__create_results_bucket()
 
         self.glue_database = self.__create_glue_catalog_database()
         self.__set_glue_data_catalog_encryption(self.glue_database.catalog_id)
@@ -54,15 +54,15 @@ class AthenaAnalyzer(Construct):
         flow_logs_table = self.__create_flow_logs_table(
             flow_logs_bucket, self.glue_database
         )
-        athena_results_table = self.__create_results_table(
-            self.glue_database, self.results_bucket
-        )
+        # athena_results_table = self.__create_results_table(
+        #     self.glue_database, self.results_bucket
+        # )
 
         self.sql_query_string = self.__create_athena_named_query(
             self.glue_database,
             pods_table,
             flow_logs_table,
-            athena_results_table,
+            # athena_results_table,
             frequency,
         )
 
@@ -86,19 +86,19 @@ class AthenaAnalyzer(Construct):
             data_catalog_encryption_settings=encryption_settings,
         )
 
-    def __create_results_bucket(self, server_access_logs_bucket) -> s3.Bucket:
-        bucket = s3.Bucket(
-            self,
-            "athena-results",
-            removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            encryption=s3.BucketEncryption.S3_MANAGED,
-            enforce_ssl=True,
-            server_access_logs_bucket=server_access_logs_bucket,
-            object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
-        )
-        return bucket
+    # def __create_results_bucket(self) -> s3.Bucket:
+    #     bucket = s3.Bucket(
+    #         self,
+    #         "athena-results",
+    #         removal_policy=RemovalPolicy.DESTROY,
+    #         auto_delete_objects=True,
+    #         block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+    #         encryption=s3.BucketEncryption.S3_MANAGED,
+    #         enforce_ssl=True,
+    #         server_access_logs_bucket=server_access_logs_bucket,
+    #         object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
+    #     )
+    #     return bucket
 
     def __create_glue_catalog_database(self) -> glue_alpha.Database:
         glue_database = glue_alpha.Database(
@@ -163,7 +163,7 @@ class AthenaAnalyzer(Construct):
         glue_database: glue_alpha.Database,
         pods_table: glue_alpha.Table,
         flow_logs_table: glue_alpha.Table,
-        athena_results_table: glue_alpha.Table,
+        # athena_results_table: glue_alpha.Table,
         frequency: Duration,
     ) -> athena.CfnNamedQuery:
         query_cross_az_traffic_by_app_path = self.__get_query_template_file_path()
@@ -171,7 +171,7 @@ class AthenaAnalyzer(Construct):
         query_cross_az_traffic_by_app = self.__get_formatted_query(
             pods_table,
             flow_logs_table,
-            athena_results_table,
+            # athena_results_table,
             query_cross_az_traffic_by_app_path,
             frequency,
         )
@@ -200,7 +200,7 @@ class AthenaAnalyzer(Construct):
         self,
         pods_table: glue_alpha.Table,
         flow_logs_table: glue_alpha.Table,
-        athena_results_table: glue_alpha.Table,
+        # athena_results_table: glue_alpha.Table,
         query_cross_az_traffic_by_app_path: str,
         invokation_frequency: Duration,
     ) -> str:
@@ -214,7 +214,7 @@ class AthenaAnalyzer(Construct):
                 query_cross_az_traffic_by_app += line
 
         query_cross_az_traffic_by_app = query_cross_az_traffic_by_app.format(
-            athena_results_table_name=athena_results_table.table_name,
+            # athena_results_table_name=athena_results_table.table_name,
             pods_table_name=pods_table.table_name,
             vpc_flow_logs_table_name=flow_logs_table.table_name,
             invokation_frequency=invokation_frequency.to_minutes(),

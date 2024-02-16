@@ -40,60 +40,73 @@ class EksInterAzVisibility(Stack):
         eks_cluster = self.__get_eks_cluster_from_parameter()
         eks_vpc = self.__get_vpc_from_parameter()
 
-        server_access_logs_bucket = self.create_server_access_logs_bucket()
+        # server_access_logs_bucket = self.create_server_access_logs_bucket()
 
-        pod_metadata_extractor = PodMetaDataExtractor(
-            scope=self,
-            id="PodMetaDataExtractor",
-            eks_cluster=eks_cluster,
-            server_access_logs_bucket=server_access_logs_bucket,
+        # pod_metadata_extractor = PodMetaDataExtractor(
+        #     scope=self,
+        #     id="PodMetaDataExtractor",
+        #     eks_cluster=eks_cluster,
+        #     server_access_logs_bucket=server_access_logs_bucket,
+        # )
+
+        pod_state_bucket = s3.Bucket(
+            self,
+            "pod-state-bucket",
+            removal_policy=RemovalPolicy.DESTROY,
+            # auto_delete_objects=True,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            enforce_ssl=True,
+            # server_access_logs_bucket=server_access_logs_bucket,
+            object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
         )
-
+       
+        
         vpc_flow_logs = VPCFlowLogs(
             scope=self,
             id="FlowLogs",
             vpc=eks_vpc,
-            server_access_logs_bucket=server_access_logs_bucket,
+            # server_access_logs_bucket=server_access_logs_bucket,
         )
 
         athena_analyzer = AthenaAnalyzer(
             scope=self,
             id="AthenaAnalyzer",
-            pod_metadata_extractor_bucket=pod_metadata_extractor.bucket,
+            pod_metadata_extractor_bucket=pod_state_bucket,
             flow_logs_bucket=vpc_flow_logs.bucket,
             frequency=EVENT_BRIDGE_SCHEDULED_RULE_FREQUENCY,
-            server_access_logs_bucket=server_access_logs_bucket,
+            # server_access_logs_bucket=server_access_logs_bucket,
         )
 
-        orchestrator = OrchestratorStepFunction(
-            scope=self,
-            id="OrchestratorStepFunction",
-            pod_metadata_extractor_lambda_function=pod_metadata_extractor.lambda_k8s_client,
-            athena_analyzer=athena_analyzer,
-        )
+        # orchestrator = OrchestratorStepFunction(
+        #     scope=self,
+        #     id="OrchestratorStepFunction",
+        #     pod_metadata_extractor_lambda_function=pod_metadata_extractor.lambda_k8s_client,
+        #     athena_analyzer=athena_analyzer,
+        # )
 
-        self.create_event_bridge_scheduled_rule(
-            orchestrator, EVENT_BRIDGE_SCHEDULED_RULE_FREQUENCY
-        )
+        # self.create_event_bridge_scheduled_rule(
+        #     orchestrator, EVENT_BRIDGE_SCHEDULED_RULE_FREQUENCY
+        # )
 
-        CfnOutput(
-            self,
-            "Lambda-K8S-Client-Role-ARN",
-            value=pod_metadata_extractor.eks_client_role.role_arn,
-        )
+        # CfnOutput(
+        #     self,
+        #     "Lambda-K8S-Client-Role-ARN",
+        #     value=pod_metadata_extractor.eks_client_role.role_arn,
+        # )
 
-    def create_server_access_logs_bucket(self):
-        server_access_logs_bucket = s3.Bucket(
-            self,
-            "Server-Access-Logs",
-            removal_policy=RemovalPolicy.RETAIN,
-            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-            encryption=s3.BucketEncryption.S3_MANAGED,
-            object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
-            enforce_ssl=True,
-        )
+    # def create_server_access_logs_bucket(self):
+    #     server_access_logs_bucket = s3.Bucket(
+    #         self,
+    #         "Server-Access-Logs",
+    #         removal_policy=RemovalPolicy.RETAIN,
+    #         block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+    #         encryption=s3.BucketEncryption.S3_MANAGED,
+    #         object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
+    #         enforce_ssl=True,
+    #     )
 
-        return server_access_logs_bucket
+    #     return server_access_logs_bucket
 
     def create_event_bridge_scheduled_rule(
         self, orchestrator: OrchestratorStepFunction, frequency: Duration

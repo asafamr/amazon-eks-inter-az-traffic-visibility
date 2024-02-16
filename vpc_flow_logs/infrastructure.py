@@ -30,12 +30,12 @@ class VPCFlowLogs(Construct):
         scope: Construct,
         id: str,
         vpc: ec2.Vpc,
-        server_access_logs_bucket: s3.Bucket,
+        # server_access_logs_bucket: s3.Bucket,
         **kwargs
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        self.bucket = self.__create_flow_logs_bucket(server_access_logs_bucket)
+        self.bucket = self.__create_flow_logs_bucket()
         self.__create_flow_logs_for_vpc(vpc, self.bucket)
 
     def __create_flow_logs_for_vpc(
@@ -61,7 +61,7 @@ class VPCFlowLogs(Construct):
         )
         flow_logs.node.add_dependency(destination_bucket)
 
-    def __create_flow_logs_bucket(self, server_access_logs_bucket) -> s3.Bucket:
+    def __create_flow_logs_bucket(self) -> s3.Bucket:
         """
         Creates an S3 Bucket where the VPC Flow Logs will be sent to.
         """
@@ -69,14 +69,14 @@ class VPCFlowLogs(Construct):
             self,
             "vpc-flow-logs-bucket",
             removal_policy=RemovalPolicy.DESTROY,
-            auto_delete_objects=True,
-            lifecycle_rules=[
-                s3.LifecycleRule(enabled=True, expiration=Duration.days(1))
-            ],
+            # auto_delete_objects=True,
+            # lifecycle_rules=[
+            #     s3.LifecycleRule(enabled=True, expiration=Duration.days(1))
+            # ],
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
             enforce_ssl=True,
-            server_access_logs_bucket=server_access_logs_bucket,
+            # server_access_logs_bucket=server_access_logs_bucket,
             object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
         )
         return bucket
