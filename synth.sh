@@ -1,1 +1,1 @@
-npx cdk synth > cloudformation.yaml
+npx cdk synth | sed 's/CatalogId: .*/CatalogId: {"Ref": "AWS::AccountId"}/g' > cloudformation.yaml
