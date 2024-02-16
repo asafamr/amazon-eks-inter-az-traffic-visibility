@@ -13,7 +13,7 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
--- INSERT INTO "{athena_results_table_name}"
+# INSERT INTO "{athena_results_table_name}"
 WITH
 ip_addresses_and_az_mapping AS (
 SELECT DISTINCT pkt_srcaddr as ipaddress, az_id
