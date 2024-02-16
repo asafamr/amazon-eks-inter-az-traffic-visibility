@@ -37,7 +37,7 @@ class EksInterAzVisibility(Stack):
     def __init__(self, scope: Construct, id_: str, **kwargs) -> None:
         super().__init__(scope, id_, **kwargs)
 
-        eks_cluster = self.__get_eks_cluster_from_parameter()
+        # eks_cluster = self.__get_eks_cluster_from_parameter()
         eks_vpc = self.__get_vpc_from_parameter()
 
         # server_access_logs_bucket = self.create_server_access_logs_bucket()

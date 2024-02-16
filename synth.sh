@@ -1,0 +1,1 @@
+npx cdk synth > cloudformation.yaml
