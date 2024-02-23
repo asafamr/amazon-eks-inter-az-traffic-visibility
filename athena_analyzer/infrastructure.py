@@ -43,7 +43,7 @@ class AthenaAnalyzer(Construct):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        # self.results_bucket = self.__create_results_bucket()
+        self.results_bucket = self.__create_results_bucket()
 
         self.glue_database = self.__create_glue_catalog_database()
         self.__set_glue_data_catalog_encryption(self.glue_database.catalog_id)
@@ -58,13 +58,13 @@ class AthenaAnalyzer(Construct):
         #     self.glue_database, self.results_bucket
         # )
 
-        self.sql_query_string = self.__create_athena_named_query(
-            self.glue_database,
-            pods_table,
-            flow_logs_table,
-            # athena_results_table,
-            frequency,
-        )
+        # self.sql_query_string = self.__create_athena_named_query(
+        #     self.glue_database,
+        #     pods_table,
+        #     flow_logs_table,
+        #     # athena_results_table,
+        #     frequency,
+        # )
 
     def __set_glue_data_catalog_encryption(self, catalog_id: str) -> None:
         encryption_at_rest_settings = (
@@ -86,19 +86,19 @@ class AthenaAnalyzer(Construct):
             data_catalog_encryption_settings=encryption_settings,
         )
 
-    # def __create_results_bucket(self) -> s3.Bucket:
-    #     bucket = s3.Bucket(
-    #         self,
-    #         "athena-results",
-    #         removal_policy=RemovalPolicy.DESTROY,
-    #         auto_delete_objects=True,
-    #         block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
-    #         encryption=s3.BucketEncryption.S3_MANAGED,
-    #         enforce_ssl=True,
-    #         server_access_logs_bucket=server_access_logs_bucket,
-    #         object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
-    #     )
-    #     return bucket
+    def __create_results_bucket(self) -> s3.Bucket:
+        bucket = s3.Bucket(
+            self,
+            "athena-results",
+            removal_policy=RemovalPolicy.DESTROY,
+            # auto_delete_objects=True,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            enforce_ssl=True,
+            # server_access_logs_bucket=server_access_logs_bucket,
+            object_ownership=s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
+        )
+        return bucket
 
     def __create_glue_catalog_database(self) -> glue_alpha.Database:
         glue_database = glue_alpha.Database(
@@ -158,34 +158,34 @@ class AthenaAnalyzer(Construct):
         )
         return athena_results_table
 
-    def __create_athena_named_query(
-        self,
-        glue_database: glue_alpha.Database,
-        pods_table: glue_alpha.Table,
-        flow_logs_table: glue_alpha.Table,
-        # athena_results_table: glue_alpha.Table,
-        frequency: Duration,
-    ) -> athena.CfnNamedQuery:
-        query_cross_az_traffic_by_app_path = self.__get_query_template_file_path()
+    # def __create_athena_named_query(
+    #     self,
+    #     glue_database: glue_alpha.Database,
+    #     pods_table: glue_alpha.Table,
+    #     flow_logs_table: glue_alpha.Table,
+    #     # athena_results_table: glue_alpha.Table,
+    #     frequency: Duration,
+    # ) -> athena.CfnNamedQuery:
+    #     query_cross_az_traffic_by_app_path = self.__get_query_template_file_path()
 
-        query_cross_az_traffic_by_app = self.__get_formatted_query(
-            pods_table,
-            flow_logs_table,
-            # athena_results_table,
-            query_cross_az_traffic_by_app_path,
-            frequency,
-        )
+    #     query_cross_az_traffic_by_app = self.__get_formatted_query(
+    #         pods_table,
+    #         flow_logs_table,
+    #         # athena_results_table,
+    #         query_cross_az_traffic_by_app_path,
+    #         frequency,
+    #     )
 
-        query = athena.CfnNamedQuery(
-            self,
-            "query-cross-az-traffic-by-app",
-            name="query-cross-az-traffic-by-app",
-            database=glue_database.database_name,
-            query_string=query_cross_az_traffic_by_app,
-            description="Joins VPC Flow Logs and pod-metadata-extractor results to gain visibility of inter-az traffic between pods in an EKS cluster",
-        )
+    #     query = athena.CfnNamedQuery(
+    #         self,
+    #         "query-cross-az-traffic-by-app",
+    #         name="query-cross-az-traffic-by-app",
+    #         database=glue_database.database_name,
+    #         query_string=query_cross_az_traffic_by_app,
+    #         description="Joins VPC Flow Logs and pod-metadata-extractor results to gain visibility of inter-az traffic between pods in an EKS cluster",
+    #     )
 
-        return query.query_string
+    #     return query.query_string
 
     def __get_query_template_file_path(self) -> str:
         queries_dir_path = str(

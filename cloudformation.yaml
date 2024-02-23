@@ -122,6 +122,52 @@ Resources:
       - FlowLogsvpcflowlogsbucket8625B84A
     Metadata:
       aws:cdk:path: CdkEksInterAzVisibility/FlowLogs/eks-inter-az-visibility-s3-flow-logs
+  AthenaAnalyzerathenaresults88B510AC:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: CdkEksInterAzVisibility/AthenaAnalyzer/athena-results/Resource
+  AthenaAnalyzerathenaresultsPolicy9EDC61B3:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: AthenaAnalyzerathenaresults88B510AC
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - AthenaAnalyzerathenaresults88B510AC
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - AthenaAnalyzerathenaresults88B510AC
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: CdkEksInterAzVisibility/AthenaAnalyzer/athena-results/Policy/Resource
   AthenaAnalyzereksinterazvisibilitydatabase2A4D92F2:
     Type: AWS::Glue::Database
     Properties:
@@ -222,110 +268,10 @@ Resources:
         TableType: EXTERNAL_TABLE
     Metadata:
       aws:cdk:path: CdkEksInterAzVisibility/AthenaAnalyzer/flow-logs-table/Table
-  AthenaAnalyzerquerycrossaztrafficbyapp659310A2:
-    Type: AWS::Athena::NamedQuery
-    Properties:
-      Database:
-        Ref: AthenaAnalyzereksinterazvisibilitydatabase2A4D92F2
-      Description: Joins VPC Flow Logs and pod-metadata-extractor results to gain visibility of inter-az traffic between pods in an EKS cluster
-      Name: query-cross-az-traffic-by-app
-      QueryString:
-        Fn::Join:
-          - ""
-          - - |-
-              
-
-
-              WITH
-              ip_addresses_and_az_mapping AS (
-              SELECT DISTINCT pkt_srcaddr as ipaddress, az_id
-              FROM "
-            - Ref: AthenaAnalyzerflowlogstableTableD01608E8
-            - |-
-              "
-              WHERE flow_direction = 'egress'
-              and from_unixtime("
-            - Ref: AthenaAnalyzerflowlogstableTableD01608E8
-            - |-
-              ".start)>(CURRENT_TIMESTAMP - (60 * interval '1' minute))
-              ),
-              egress_flows_of_pods_with_status AS (
-              SELECT
-              "
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - |-
-              ".name as srcpodname,
-              "
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - |-
-              ".app as srcpodapp,
-              pkt_srcaddr as srcaddr,
-              pkt_dstaddr as dstaddr,
-              "
-            - Ref: AthenaAnalyzerflowlogstableTableD01608E8
-            - |-
-              ".az_id as srcazid,
-              bytes, 
-              start
-              FROM "
-            - Ref: AthenaAnalyzerflowlogstableTableD01608E8
-            - |-
-              "
-              INNER JOIN "
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - '" ON "'
-            - Ref: AthenaAnalyzerflowlogstableTableD01608E8
-            - '".pkt_srcaddr = "'
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - |-
-              ".ip
-              WHERE flow_direction = 'egress'
-              and from_unixtime("
-            - Ref: AthenaAnalyzerflowlogstableTableD01608E8
-            - |-
-              ".start)>(CURRENT_TIMESTAMP - (60 * interval '1' minute))
-              ),
-
-              cross_az_traffic_by_pod as (
-              SELECT
-              srcaddr,
-              srcpodname,
-              srcpodapp,
-              dstaddr,
-              "
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - |-
-              ".name as dstpodname,
-              "
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - |-
-              ".app as dstpodapp,
-              srcazid,
-              ip_addresses_and_az_mapping.az_id as dstazid,
-              bytes,
-              start
-              FROM egress_flows_of_pods_with_status
-              INNER JOIN "
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - '" ON dstaddr = "'
-            - Ref: AthenaAnalyzerpodstableTable59EBB00B
-            - |-
-              ".ip
-              LEFT JOIN ip_addresses_and_az_mapping ON dstaddr = ipaddress
-              WHERE ip_addresses_and_az_mapping.az_id != srcazid
-              )
-
-              SELECT date_trunc('MINUTE', from_unixtime(start)) AS time, CONCAT(srcpodapp, ' -> ', dstpodapp) as inter_az_traffic, sum(bytes) as total_bytes
-              FROM cross_az_traffic_by_pod
-              WHERE srcpodapp!='<none>' AND dstpodapp!='<none>'
-              GROUP BY date_trunc('MINUTE', from_unixtime(start)), CONCAT(srcpodapp, ' -> ', dstpodapp)
-              ORDER BY time, total_bytes DESC
-    Metadata:
-      aws:cdk:path: CdkEksInterAzVisibility/AthenaAnalyzer/query-cross-az-traffic-by-app
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/0VPwU7DMAz9lt5dj25CiBtiwAmhsnFHbmba0CyZEkdTFfXfSdQCB+vZz0/v2Vu8v8XUVHQNtTqNtdEdpqOQGmH/ZVvydGZhDwcOLnrFkIWfKewwPUY1shTV2i3QOqPV9E8v8wystpjJF+Our66H3kTGlIknEuooMKz9Ppdx/bNVfrqIdvbIItr2oQg+qDM8A8nAlordWz7v9B7Z54Q8/l45Q1OTuQyEN9XD+tqmYIldN+kveXGdoZ1kcHazw6bBu+o7aF37aEWfGQ8L/gAoE+txLgEAAA==
+      Analytics: v2:deflate64:H4sIAAAAAAAA/0VPuw7CMAz8lu6poSCE2BCviaECduQG04aGBCWuUBX132nUAoN15/PJZ89gtYCQJfj2qbzVqVYFhDOjrMX2bnJ0+CQmJ07kbeMkid54DX4OYdPImji6RjZAbrWS7V8e+k6QnEEvHrR9H20pSt0QhF7YIWOBnsTIt31pW+6NdO2LlTVnYlam9NFwwUJT10X6PagTWYr6VSFMk/X4xSRiTBgn4RfyXZC3XFkzmUOWwTJ5eKVS1xhWT4LTgB83YhttGQEAAA==
     Metadata:
       aws:cdk:path: CdkEksInterAzVisibility/CDKMetadata/Default
 Rules:
