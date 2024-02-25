@@ -54,9 +54,9 @@ class AthenaAnalyzer(Construct):
         flow_logs_table = self.__create_flow_logs_table(
             flow_logs_bucket, self.glue_database
         )
-        # athena_results_table = self.__create_results_table(
-        #     self.glue_database, self.results_bucket
-        # )
+        athena_results_table = self.__create_results_table(
+            self.glue_database, self.results_bucket
+        )
 
         # self.sql_query_string = self.__create_athena_named_query(
         #     self.glue_database,
